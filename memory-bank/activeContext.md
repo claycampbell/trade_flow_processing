@@ -1,39 +1,73 @@
 # Active Development Context
 
 ## Current Focus
-Implementing core trade processing capabilities with Kafka integration.
+Implementing system testing capabilities with trade simulation.
 
 ## Recent Changes
-- Implemented Trade Validation Service core components:
-  - Trade and TradeMessage models
-  - Validation rules framework
-  - Kafka configuration with retry support
-  - Message listeners with error handling
-  - Application configuration with Kafka topics
+1. Implemented Trade Simulation Engine:
+   - Scheduled trade generation
+   - Random trade data generation
+   - Configurable generation intervals
+   - Burst mode for load testing
+   - REST API for control
+
+2. Simulation Features:
+   - Multiple instruments and counterparties
+   - Realistic price and quantity ranges
+   - Configurable enable/disable
+   - Health monitoring endpoints
+   - Rate limiting support
+
+3. Previous Implementations:
+   - Redis caching in Trade Enrichment Service
+   - Kafka integration in Trade Validation Service
+   - Core validation rules and processing
 
 ## Technical Decisions
-1. Kafka Integration Design:
-   - Separate topics for different message types (incoming, validated, errors, DLQ)
-   - Retryable and non-retryable message paths
-   - JSON serialization for messages
-   - Configurable retry policies with backoff
-   
-2. Error Handling Strategy:
-   - Validation exceptions trigger retries
-   - System errors go to error topic
-   - Max retry attempts configurable
-   - Dead Letter Queue for unprocessable messages
+1. Simulation Design:
+   - REST API for control and monitoring
+   - Scheduled generation using Spring
+   - Thread-safe state management
+   - Configurable generation parameters
+   - Built-in rate limiting
 
-3. Message Processing:
-   - Asynchronous processing using Kafka listeners
-   - Set up MongoDB connection
-   - Create data models
-   - Implement repository layer
+2. Data Generation:
+   - Realistic instrument codes
+   - Major currencies only
+   - Common counterparties
+   - Price ranges within normal bounds
+   - Random but reasonable quantities
+
+3. Integration:
+   - Direct Kafka production
+   - No persistence of generated trades
+   - Health check endpoints
+   - Status monitoring
+   - Configurable via application.yaml
+
+## Next Steps
+1. Implement metrics collection:
+   - Trade generation rates
+   - Processing success/failure rates
+   - System performance metrics
+   - Cache hit ratios
+
+2. Add visualization dashboard:
+   - Real-time trade flow
+   - System performance graphs
+   - Error rate monitoring
+   - Cache statistics
+
+3. Enhance simulation capabilities:
+   - More complex trade scenarios
+   - Market condition simulation
+   - Error scenario injection
+   - Performance stress testing
 
 ## Active Considerations
-- Need to implement circuit breakers for external service calls
-- Consider implementing rate limiting for trade validation
-- Plan for validation rule versioning
-- Consider implementing rule priority ordering
-- Need to add metrics for validation performance
-- Consider implementing validation rule caching
+- Need to implement more realistic price movements
+- Consider adding market volatility simulation
+- Plan for distributed load testing
+- Consider implementing trade correlations
+- Need to add error scenario simulation
+- Consider implementing market events
