@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: trade-validation-service
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: trade-validation
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+server:
+  port: 8081
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    root: INFO
+    com.example.trade.validation: DEBUG
+
+trade-validation:
+  rules:
+    min-trade-amount: 1000
+    max-trade-amount: 1000000
+    allowed-currencies:
+      - USD
+      - EUR
+      - GBP
+      - JPY
+  kafka:
+    input-topic: trades.incoming
+    input-topic-no-retry: trades.incoming.no-retry
+    output-topic: trades.validated
+    error-topic: trades.validation.errors
+    dead-letter-topic: trades.validation.dlq
+  retry:
+    max-attempts: 3
+    initial-interval: 1000
+    multiplier: 2.0
+    max-interval: 10000

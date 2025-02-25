@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: trade-enrichment-service
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: trade-enrichment
+      auto-offset-reset: earliest
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+  redis:
+    host: localhost
+    port: 6379
+
+server:
+  port: 8082
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+logging:
+  level:
+    root: INFO
+    com.example.tradeenrichment: DEBUG
+
+trade-enrichment:
+  cache:
+    ttl: 3600  # Cache TTL in seconds
+  market-data:
+    refresh-interval: 300  # Market data refresh interval in seconds
+  reference-data:
+    sources:
+      - type: REST
+        url: http://localhost:8085/reference-data
+        timeout: 5000
+      - type: CACHE
+        name: local-reference-data

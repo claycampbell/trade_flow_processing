@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: trade-processing-system
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: trade-processing
+      auto-offset-reset: earliest
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+logging:
+  level:
+    root: INFO
+    com.example: DEBUG
