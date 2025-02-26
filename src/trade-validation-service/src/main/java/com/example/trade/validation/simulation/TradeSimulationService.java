@@ -1,165 +1,139 @@
 package com.example.trade.validation.simulation;
 
-import com.example.trade.validation.model.TradeMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.example.trade.validation.metrics.SimulationMetrics;
+import com.example.trade.validation.model.Trade;
+import com.example.trade.validation.simulation.market.MarketSimulator;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Service for simulating trade messages for system testing.
+ * Simulates trade generation with realistic market conditions.
+ * Uses market simulation to generate realistic price movements and
+ * trading patterns based on current market state.
  */
 @Service
-@EnableScheduling
 public class TradeSimulationService {
-    private static final Logger logger = LoggerFactory.getLogger(TradeSimulationService.class);
-    
-    private final KafkaTemplate<String, TradeMessage> kafkaTemplate;
-    private final Random random = new Random();
-    private final AtomicBoolean enabled = new AtomicBoolean(true);
-    
-    @Value("${trade-validation.kafka.input-topic}")
-    private String tradeTopic;
-    
-    private static final List<String> INSTRUMENTS = Arrays.asList(
-        "AAPL", "GOOGL", "MSFT", "AMZN", "META",
-        "TSLA", "NFLX", "NVDA", "JPM", "BAC"
-    );
-    
-    private static final List<String> CURRENCIES = Arrays.asList(
-        "USD", "EUR", "GBP", "JPY"
-    );
-    
-    private static final List<String> COUNTERPARTIES = Arrays.asList(
-        "JPMC", "GS", "MS", "CS", "UBS",
-        "BARC", "HSBC", "BNP", "DB", "CITI"
-    );
+    private final KafkaTemplate<String, Trade> kafkaTemplate;
+    private final SimulationMetrics metrics;
+    private final MarketSimulator marketSimulator;
+    private final Random random;
+    private final AtomicBoolean isRunning;
+
+    private static final String[] SYMBOLS = {"AAPL", "GOOGL", "MSFT", "AMZN", "META"};
+    private static final String[] CURRENCIES = {"USD", "EUR", "GBP", "JPY"};
+    private static final double BASE_TRADE_AMOUNT = 10000.0;
+    private static final String KAFKA_TOPIC = "trades";
 
     @Autowired
-    public TradeSimulationService(KafkaTemplate<String, TradeMessage> kafkaTemplate) {
+    public TradeSimulationService(
+            KafkaTemplate<String, Trade> kafkaTemplate,
+            SimulationMetrics metrics,
+            MarketSimulator marketSimulator) {
         this.kafkaTemplate = kafkaTemplate;
+        this.metrics = metrics;
+        this.marketSimulator = marketSimulator;
+        this.random = new Random();
+        this.isRunning = new AtomicBoolean(false);
+
+        // Initialize market conditions for each symbol
+        for (String symbol : SYMBOLS) {
+            // Set initial price and volatility for each symbol
+            double basePrice = 100.0 + random.nextDouble() * 900.0; // $100-$1000
+            marketSimulator.getNextPrice(symbol, basePrice);
+            marketSimulator.setSymbolVolatility(symbol, 0.2 + random.nextDouble() * 0.3); // 20-50% volatility
+        }
     }
 
     /**
-     * Gets the number of trading instruments in the simulation.
+     * Starts the trade simulation.
      */
-    public int getInstrumentCount() {
-        return INSTRUMENTS.size();
+    public void startSimulation() {
+        isRunning.set(true);
+        metrics.recordSimulationStart();
     }
 
     /**
-     * Gets the number of counterparties in the simulation.
+     * Stops the trade simulation.
      */
-    public int getCounterpartyCount() {
-        return COUNTERPARTIES.size();
+    public void stopSimulation() {
+        isRunning.set(false);
+        metrics.recordSimulationStop();
     }
 
     /**
-     * Gets the current enabled state of the simulation.
+     * Generates and sends trades at regular intervals.
      */
-    public boolean isEnabled() {
-        return enabled.get();
-    }
-
-    /**
-     * Sets the enabled state of the simulation.
-     */
-    public void setEnabled(boolean state) {
-        enabled.set(state);
-    }
-
-    /**
-     * Generates and sends simulated trade messages periodically.
-     */
-    @Scheduled(fixedRateString = "${simulation.trade-generation-interval:5000}")
+    @Scheduled(fixedRate = 1000) // Generate trade every second
     public void generateTrade() {
-        if (!enabled.get()) {
+        if (!isRunning.get()) {
             return;
         }
-        TradeMessage trade = generateRandomTrade();
-        sendTrade(trade);
-    }
 
-    /**
-     * Generates a random trade message with realistic data.
-     */
-    private TradeMessage generateRandomTrade() {
-        TradeMessage trade = new TradeMessage();
-        trade.setMessageId(UUID.randomUUID().toString());
-        trade.setTradeId(UUID.randomUUID().toString());
-        trade.setInstrument(getRandomElement(INSTRUMENTS));
-        trade.setCurrency(getRandomElement(CURRENCIES));
-        trade.setCounterparty(getRandomElement(COUNTERPARTIES));
-        trade.setQuantity(generateRandomQuantity());
-        trade.setPrice(generateRandomPrice());
-        trade.setTradeDate(LocalDateTime.now());
-        trade.setReceivedTimestamp(LocalDateTime.now());
-        
-        return trade;
-    }
-
-    /**
-     * Sends a trade message to Kafka.
-     */
-    private void sendTrade(TradeMessage trade) {
         try {
-            kafkaTemplate.send(tradeTopic, trade.getTradeId(), trade).get();
-            logger.info("Simulated trade sent: {}", trade.getTradeId());
+            Trade trade = generateRandomTrade();
+            kafkaTemplate.send(KAFKA_TOPIC, trade.getSymbol(), trade);
+            metrics.recordTradeGenerated();
         } catch (Exception e) {
-            logger.error("Error sending simulated trade: {}", e.getMessage());
+            metrics.recordError();
         }
     }
 
     /**
-     * Generates a random quantity between 100 and 10000.
+     * Generates a random trade with realistic market-driven prices.
      */
-    private BigDecimal generateRandomQuantity() {
-        return BigDecimal.valueOf(random.nextInt(9901) + 100);
+    private Trade generateRandomTrade() {
+        String symbol = SYMBOLS[random.nextInt(SYMBOLS.length)];
+        String currency = CURRENCIES[random.nextInt(CURRENCIES.length)];
+        
+        // Get market-driven price
+        double marketPrice = marketSimulator.getNextPrice(symbol, 100.0);
+        
+        // Generate trade amount based on market conditions
+        double baseAmount = BASE_TRADE_AMOUNT * (0.5 + random.nextDouble());
+        double volumeAdjustment = marketSimulator.getCurrentMarketCondition().getTradingVolume();
+        double tradeAmount = baseAmount * volumeAdjustment;
+
+        return Trade.builder()
+                .id(UUID.randomUUID().toString())
+                .symbol(symbol)
+                .price(marketPrice)
+                .amount(tradeAmount)
+                .currency(currency)
+                .timestamp(System.currentTimeMillis())
+                .build();
     }
 
     /**
-     * Generates a random price between 10 and 1000.
+     * Simulates a market event (e.g., earnings announcement, economic news)
      */
-    private BigDecimal generateRandomPrice() {
-        return BigDecimal.valueOf(random.nextDouble() * 990 + 10)
-            .setScale(2, BigDecimal.ROUND_HALF_UP);
+    public void simulateMarketEvent(String description) {
+        double eventVolatility = 0.6 + random.nextDouble() * 0.4; // 60-100% volatility
+        marketSimulator.simulateMarketEvent(
+            eventVolatility,
+            random.nextBoolean() 
+                ? MarketCondition.MarketState.VOLATILE 
+                : MarketCondition.MarketState.MARKET_EVENT
+        );
+        metrics.recordMarketEvent(description);
     }
 
     /**
-     * Gets a random element from a list.
+     * Gets the current market condition.
      */
-    private <T> T getRandomElement(List<T> list) {
-        return list.get(random.nextInt(list.size()));
+    public MarketCondition getCurrentMarketCondition() {
+        return marketSimulator.getCurrentMarketCondition();
     }
 
     /**
-     * Generates and sends a burst of trades for load testing.
-     * @param count Number of trades to generate
+     * Gets the current price for a symbol.
      */
-    public void generateTradeBurst(int count) {
-        logger.info("Generating burst of {} trades", count);
-        for (int i = 0; i < count; i++) {
-            TradeMessage trade = generateRandomTrade();
-            sendTrade(trade);
-            try {
-                Thread.sleep(100); // Small delay to prevent overwhelming the system
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            }
-        }
-        logger.info("Completed generating {} trades", count);
+    public double getCurrentPrice(String symbol) {
+        return marketSimulator.getCurrentPrice(symbol, 100.0);
     }
 }

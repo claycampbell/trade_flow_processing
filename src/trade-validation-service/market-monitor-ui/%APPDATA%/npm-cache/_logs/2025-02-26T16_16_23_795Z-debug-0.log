@@ -1,0 +1,25 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@10.9.2
+2 info using node@v22.14.0
+3 silly config load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config load:file:e:\anil\src\trade-validation-service\market-monitor-ui\.npmrc
+5 silly config load:file:C:\Users\clayc\.npmrc
+6 silly config load:file:e:\anil\src\trade-validation-service\market-monitor-ui\%APPDATA%\npm\etc\npmrc
+7 verbose title npm view axios description dist-tags.latest homepage version time
+8 verbose argv "view" "--json" "--" "axios" "description" "dist-tags.latest" "homepage" "version" "time"
+9 verbose logfile logs-max:10 dir:e:\anil\src\trade-validation-service\market-monitor-ui\%APPDATA%\npm-cache\_logs\2025-02-26T16_16_23_795Z-
+10 verbose logfile e:\anil\src\trade-validation-service\market-monitor-ui\%APPDATA%\npm-cache\_logs\2025-02-26T16_16_23_795Z-debug-0.log
+11 silly logfile done cleaning log files
+12 http fetch GET 200 https://registry.npmjs.org/npm 200ms
+13 http fetch GET 200 https://registry.npmjs.org/axios 391ms (cache miss)
+14 verbose cwd e:\anil\src\trade-validation-service\market-monitor-ui
+15 verbose os Windows_NT 10.0.26100
+16 verbose node v22.14.0
+17 verbose npm  v10.9.2
+18 notice
+18 notice New major version of npm available! 10.9.2 -> 11.1.0
+18 notice Changelog: https://github.com/npm/cli/releases/tag/v11.1.0
+18 notice To update run: npm install -g npm@11.1.0
+18 notice  { force: true, [Symbol(proc-log.meta)]: true }
+19 verbose exit 0
+20 info ok

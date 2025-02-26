@@ -1,16 +1,14 @@
 spring:
-  application:
-    name: trade-validation-service
   kafka:
     bootstrap-servers: localhost:9092
     consumer:
-      group-id: trade-validation
+      group-id: trade-validation-service
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
 
 server:
   port: 8081
@@ -19,33 +17,36 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
-  endpoint:
-    health:
-      show-details: always
+        include: health,metrics,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: trade-validation-service
+
+market:
+  monitor:
+    # Update intervals (in milliseconds)
+    state-update-interval: 1000
+    price-update-interval: 500
+    event-check-interval: 5000
+    
+    # Price movement thresholds
+    significant-price-change: 0.01
+    volatility-threshold: 0.02
+    extreme-price-change: 0.05
+    
+    # Market event configuration
+    event-duration: 300
+    event-volatility-multiplier: 2.0
+    
+    # Historical data settings
+    price-history-size: 100
+    history-retention-period: 3600
 
 logging:
   level:
     root: INFO
     com.example.trade.validation: DEBUG
-
-trade-validation:
-  rules:
-    min-trade-amount: 1000
-    max-trade-amount: 1000000
-    allowed-currencies:
-      - USD
-      - EUR
-      - GBP
-      - JPY
-  kafka:
-    input-topic: trades.incoming
-    input-topic-no-retry: trades.incoming.no-retry
-    output-topic: trades.validated
-    error-topic: trades.validation.errors
-    dead-letter-topic: trades.validation.dlq
-  retry:
-    max-attempts: 3
-    initial-interval: 1000
-    multiplier: 2.0
-    max-interval: 10000
+    org.apache.kafka: WARN
